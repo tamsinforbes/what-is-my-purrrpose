@@ -1,0 +1,437 @@
+---
+title: "Purrrposeful exercises"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Libraries
+For full list of tidyverse packages see [website](https://www.tidyverse.org/packages/).
+```{r packages, message=FALSE}
+library(tidyverse) #suite of packages including dplyr, stringr, purrr, readr etc 
+library(fs) #file system operations package, reading filenames in folders etc
+library(knitr) #general purpose tool for dynamic report generation in R 
+library(kableExtra) #presentation of complex tables with customizable styles
+library(DT) #presentation of tables (wrapper of JavaScript library DataTables)
+```
+
+
+## Functional purrrpose
+These exercises are intended to be completed having studied the accompanying {purrr} presentation `what is my purrrpose`, either by reading through the html or Rmd files. All the exercises refer to data provided in the `data` folder, or created below; feel free to experiment with your own data. I have found {purrr} most useful when I need to write my own function and then iterate; this allows me to focus on writing the function for one thing and then easily extend it to many similar things. Hence the exercises below will involve writing functions, and you should be familiar with R function syntax:
+```{r}
+name_of_my_function <- function(input1, input2){
+  #tests - good practise
+  assertthat::assert_that(is.character(input1))
+  assertthat::assert_that(is.character(input2))
+  #do something with the inputs
+  output <- glue::glue(input1, ' and ', input2)
+  #specify output
+  return(output)
+}
+
+#try out function
+name_of_my_function('Pinky','The Brain')
+name_of_my_function('Fools', 'Horses')
+```
+
+```{r eval=FALSE}
+#these will error, hence not run when knitted
+name_of_my_function(TRUE, FALSE)
+name_of_my_function('one', 2)
+```
+
+
+## Useful links
+* [{purrr} cheatsheet](https://github.com/rstudio/cheatsheets/blob/master/purrr.pdf)
+* [DfT R Cookbook chapter 3.6](https://departmentfortransport.github.io/R-cookbook/data-import.html#xlsx-and-.xls)
+* [what_is_my_purrrpose presentation materials at DfT C&C GitHub](https://github.com/departmentfortransport/coffee-and-coding/tree/master/All_materials/20200716_what_is_my_purrrpose)
+* [To purrr or not to purrr](https://www.r-bloggers.com/2018/05/to-purrr-or-not-to-purrr/)
+* [Learn to purrr](https://www.rebeccabarter.com/blog/2019-08-19_purrr/)
+
+## Read in some data
+```{r}
+port_df <- readxl::read_excel(path = "data/port0499.xlsx", sheet = 1)
+pokemon <- readr::read_csv(
+  file = "data/messy_pokemon_data.csv"
+  , col_types = "ciidcdcccct"
+  , n_max = 25)
+```
+
+## Create some extra data
+A variety of vectors, lists and dataframes for use in this code. Not all are used below.
+```{r create_data}
+#some vectors, vectors must be all the same data type
+#character vectors
+animals <- c("ant", "bat", "cat", "dog", "elk", "fox", "gnu")
+words <- c("she", "sells", "seashells")
+villages <- c("Godric's Hollow", "Ottery St. Catchpole")
+saturn_moons <- c("Titan", "Mimas", "Europa", "Phoebe", "Tethys", "Rhea")
+
+#numeric vectors
+integers <- c(4, 6, 2, 7, 4, 6, 3, 6)
+doubles <- c(5.3, 4.6, 2.5, 7.45, 9.23, 6.76, 3.4, 2.5)
+
+#logical
+logical <- c(T, F, F, F, T, T, F, T, T)
+
+#lists, lists can hold a mixture of data types, and be nested
+simple_list <- list("just", "some", "words")
+alist <- list(animals, integers, logical)
+nested_list <- list(saturn_moons, list(words, logical), villages)
+list_moons <- list("Titan", "Mimas", "Europa", "Phoebe", "Tethys", "Rhea" )
+
+set.seed(12345) #set seed to make random seelctions repeatable
+#dataframes are lists with special properties
+#a column must contain only one data type, and each column must have the same length
+df1 <- tibble::tibble(
+  "animal" = sample(animals, 20, replace = TRUE)
+  , "height" = runif(n = 20, min = 1, max = 20)
+)
+
+#a column can contain a vector of lists, including nested lists
+df2 <- tibble::tibble(
+  "word" = words
+  , "lists" = list(logical, saturn_moons, list(integers, villages))
+)
+
+#a dataframe of fruit consumption in kilos per month
+monthly_fruit_consumption <- tibble::tibble(
+  fruit = c("banana", "gooseberry", "peach", 'raspberry', 'guava')
+  , month = c('Mar', 'May', 'Apr', 'Mar', 'May')
+  , mass_kilos = c(12, 13, 15, 11, 9)
+)
+```
+
+
+## {purrr} functions
+Functions covered in the presentation
+
+* map, map_chr, map_int, map_lgl, map_dfr, map_dfc
+* map2_ versions of these to apply a function to pairs of elements from two lists
+
+Other functions 
+
+* pmap; exetension of map2 to apply a function to p-tuples of elements from p lists
+* invoke_map; list functions to apply to corresponding elements in a list
+* walk, walk2, pwalk; trigger side effects, but return uis invisible 
+
+
+## For loop vs {purrr}
+
+Basic for loop to count the length of each string in the list of Saturn's moons
+```{r}
+for (moon in saturn_moons) {
+  print( nchar(moon) )
+}
+```
+
+
+Output is individual integer vectors of length 1 and not hugely useful as it is. It is usually more useful as a single vector. One way to achieve this is by creating an empty vector and appending to it. {purrr} does this for you, efficiently; the various map functions output single vectors or dataframes of the specified data type
+```{r}
+output <- purrr::map_int(.x = saturn_moons, .f =  ~ nchar(.x))
+print(typeof(output))
+print(length(output))
+output
+```
+
+
+
+# EXERCISES
+
+1. Write  a function to add 1 to some input, use `purrr::map` to iterate over a list of numbers. What happens if you iterate over a numerical vector instead of a list?
+```{r}
+
+
+```
+
+
+2. Use `purrr::map_lgl` to return a logical vector of the animal names that contain the string "at". 
+```{r}
+
+
+```
+
+3. Use `purrr::map_dbl` to get the mean of every column in the pokemon dataframe. Tips: there are NAs in some columns, and the non-numerical columns will return NA.
+```{r}
+
+
+```
+
+4. Write a funntion `charMode`, to get the most frequent value from a character column, use `purrr::map_chr` to iterate this over the pokemon dataframe. What happens to the numerical columns?
+```{r}
+
+
+```
+
+
+5. Try out `charMode` with `purrr::map_if` to apply it only to the columns that are type character. 
+```{r}
+
+
+```
+
+6. Iterate over rows in a specific column. Use `purrr::map_int` to return the number of characters in each value of one of the pokemon character columns. Tips: use .$colname to specify the column name.
+```{r}
+
+
+```
+
+
+
+7. Use `purrr::map` to get the class of each column in the pokemon datafram
+```{r}
+
+
+```
+
+
+8. `purrr::map2`, use this when a function requires two inputs. Input lists must be the same length, use the integers and doubles numerical vectors created above as lists and apply a funciton, or write your own,  to do something with the pair of numbers
+```{r}
+
+
+```
+
+9. Extension of `purrr::map2` is `purrr::pmap`, which takes a list of lists as input. A list of three named lists is given below, use `purrr::pmap`, or one of the other versions such as `purrr::dbl`, `purrr::int` to apply a function, or write your own and apply it to each triple.
+```{r}
+
+list_of_lists = list(x = list(1,2,3), y = list(8,9,10), z = list(23, 26, 27))
+
+```
+
+10. Using pmap to write code. Sometimes its useful to use code to write code for you. Use list_of_lists again and write a function to combine the triples of numbers in some way as text to be evaluated later. Tips: eg use glue::glue({x}, "+", {y}) to refer to function inputs, use `purrr::pmap_chr` to return a single list of character elements which will be your code as strings, use eval(parse(text = .x)) to parse and evaluate a string as code.
+```{r}
+list_of_lists = list(x = list(1,2,3), y = list(8,9,10), z = list(23, 26, 27))
+
+
+```
+
+11. `purrr::walk` is useful for iterating when you want the side effects but no output in the environment. For example, saving multiple files. Create a list of file paths to read in, they can be any from the data folder with the same file extension for simplicity. Write a function to read the file and edit the df and save it (don't forget to call it something different!), then use `purrr::walk` to iterate over the list of files. Tips all the .csv or .xlsx files should read in as dfs, in the workbooks with multiple sheets only sheet 1 is read by default)
+```{r}
+
+
+```
+
+
+
+
+12. The pokemon_player csv files in the data folder each contain one worksheet. Create a list of paths which will be passed to `purrr::map_dfr` to combine into a single data frame. Use the `.id` argument to create a new column based on the input list. Tips; you can use fs::dir_ls and regex to extract the required path names from all the files in the data folder.
+```{r}
+
+
+```
+
+
+
+
+13. Similarly the file at "data/multi_tab_messy_pokemon_data.xlsx" contains multiple sheets of data with the same structure. Use `map_dfr` again to combine these. Tips: use `purrr::set_names` to get the names of the sheets to pass into `map_dfr`.
+
+```{r}
+
+
+```
+
+
+
+
+# SOLUTIONS
+
+
+1. Write  a function to add 1 to some input, use `purrr::map` to iterate over a list of numbers. What happens if you iterate over a numerical vector instead of a list?
+```{r}
+
+add_one <- function(x) {
+  return(x + 1)
+}
+
+#input; list, output; single list
+# note the elements of the list are implicitly passed to the function
+purrr::map(.x = list(integers), .f = add_one)
+
+#input; numerical vector, output; individial lists
+# use ~ to explicitly pass input to the function
+# useful when there is more than one input
+purrr::map(.x = integers, .f = ~ add_one(.x))
+
+```
+
+
+2. Use `purrr::map_lgl` to return a logical vector of the animal names that contain the string "at". 
+```{r}
+purrr::map_lgl(.x = animals, .f = ~ stringr::str_detect(.x, "at") )
+```
+
+3. Use `purrr::map_dbl` to get the mean of every column in the pokemon dataframe. Tips: there are NAs in some columns, and the non-numerical columns will return NA.
+```{r}
+
+#return column means
+means = purrr::map_dbl(.x = pokemon, .f = ~ mean(.x, na.rm = TRUE))
+#returns a named numerical vector
+typeof(means)
+names(means)
+
+means
+```
+
+4. Write a funntion `charMode`, to get the most frequent value from a character column, use `purrr::map_chr` to iterate this over the pokemon dataframe. What happens to the numerical columns?
+```{r}
+#funtion to get most frequent value from character column
+charMode <- function(df){
+  return( names(sort(table(df), decreasing=TRUE)[1]) )
+}
+
+
+purrr::map_chr(.x = pokemon, .f = ~charMode(.x))
+#this doesn't error on the numerical columns
+#each value in the numerical columns is converted to character and since they each occur only once
+#the sort function essentially puts them in alphabetical order and charMode takes the first one.
+```
+
+
+5. Try out `charMode` with `purrr::map_if` to apply it only to the columns that are type character. 
+```{r}
+
+purrr::map_if(.x = pokemon
+              , .p = ~ typeof(.x) == "character"
+              , .f = ~ charMode(.x) 
+              , .else = ~ mean(.x, na.rm=TRUE)
+              )
+
+#there's something weird happening here, the .else doesn't treat the columns as columns
+#rather as individuals rows. 
+```
+
+6. Iterate over rows in a specific column.USe `purrr::map_int` to return the number of characters in each value of one of the pokemon character columns. Tips: use .$colname to specify the column name.
+```{r}
+
+pokemon %>% 
+  purrr::map_int(.x = .$species, .f = ~nchar(.x))
+
+```
+
+
+
+7. Use `purrr::map` to get the class of each column in the pokemon datafram
+```{r}
+
+purrr::map(.x = pokemon, .f = ~ class(.x) )
+
+```
+
+
+8. `purrr::map2`, use this when a function requires two inputs. Input lists must be the same length, use the integers and doubles numerical vectors created above as lists and apply a funciton, or write your own,  to do something with the pair of numbers
+```{r}
+
+purrr::map2(.x = list(integers), .y = list(doubles), .f = ~ complex(real = .x, imaginary = .y))
+
+```
+
+9. Extension of `purrr::map2` is `purrr::pmap`, which takes a list of lists as input. A list of three named lists is given below, use `purrr::pmap`, or one of the other versions such as `purrr::dbl`, `purrr::int` to apply a function, or write your own and apply it to each triple.
+```{r}
+
+list_of_lists = list(x = list(1,2,3), y = list(8,9,10), z = list(23, 26, 27))
+
+purrr::pmap_dbl(.l = list_of_lists, .f = sum ) 
+```
+
+10. Using pmap to write code. Sometimes its useful to use code to write code for you. Use the same list_of_lists and write a function to combine the triples of numbers in some way as text to be evaluated later. Tips: eg use glue::glue({x}, "+", {y}) to refer to function inputs, use `purrr::pmap_chr` to return a single list of character elements which will be your code as strings, use eval(parse(text = .x)) to parse and evaluate a string as code.
+```{r}
+list_of_lists = list(x = list(1,2,3), y = list(8,9,10), z = list(23, 26, 27))
+
+#the order of the function inputs should match the order given in the list
+reverse_add <- function(x, y, z){return(glue::glue({z}, "+", {y}, "+",{x}))}
+
+my_code_strings <- purrr::pmap_chr(.l = list_of_lists, .f = reverse_add ) 
+
+my_code_strings
+
+purrr::map_dbl(.x = my_code_strings, .f = ~eval(parse(text = .x)) )
+
+```
+
+11. `purrr::walk` is useful for iterating when you want the side effects but no output in the environment. For example, saving multiple files. Create a list of file paths to read in, they can be any from the data folder with the same file extension for simplicity. Write a function to read the file and edit the df and save it (don't forget to call it something different!), then use `purrr::walk` to iterate over the list of files. Tips all the .csv or .xlsx files should read in as dfs, in the workbooks with multiple sheets only sheet 1 is read by default)
+```{r}
+
+paths <- list("data/pet_form_1.xlsx", "data/pokemon_player_c.xlsx")
+
+read_edit_save <- function(path){
+  #split path at . to add a extra bit to the name
+  split_path <- stringr::str_split(path, "\\.")
+  
+  savepath <- glue::glue(split_path[[1]][1], "_modified.", split_path[[1]][2])
+  
+  #read in and edit
+  df <- readxl::read_excel(path = path) %>% 
+    dplyr::mutate(test_col = "test")
+  
+  #save
+  df %>% writexl::write_xlsx(path=savepath)
+}
+
+purrr::walk(.x = paths, .f = ~ read_edit_save(.x))
+
+# I think the main difference here is that if you did this in a for loop 
+
+```
+
+
+
+
+12. The pokemon_player csv files in the data folder each contain one worksheet. Create a list of paths which will be passed to `purrr::map_dfr` to combine into a single data frame. Use the `.id` argument to create a new column based on the input list. Tips; you can use fs::dir_ls and regex to extract the required path names from all the files in the data folder.
+```{r}
+
+pokemon_players <- fs::dir_ls(path = "data", regex = "pokemon_player_.\\.xlsx$")  %>% 
+  purrr::map_dfr(.f = readxl::read_excel, .id = "player")
+
+pokemon_players
+```
+
+
+
+
+13. Similarly the file at "data/multi_tab_messy_pokemon_data.xlsx" contains multiple sheets of data with the same structure. Use `map_dfr` again to combine these. Tips: use `purrr::set_names` to get the names of the sheets to pass into `map_dfr`.
+
+```{r}
+path <- "data/multi_tab_messy_pokemon_data.xlsx"
+pokemon_collections <- readxl::excel_sheets(path = path) %>% 
+  purrr::set_names() %>% 
+   purrr::map_dfr(
+     ~ readxl::read_excel(path = path, sheet = .x)
+     , .id = "sheet"
+   )
+
+pokemon_collections
+```
+
+
+14.`purrr::invoke_map` apply a list of functions to corresponding list of things. Actually couldn't get this to work! Apparently it's been deprecated  in favour of exec from rlang and other purrr funcitons, see https://rdrr.io/cran/purrr/man/invoke.html 
+
+```{r eval=FALSE}
+purrr::invoke_map(.f = list(charMode, mean), .x = df1)
+```
+
+
+```{r}
+list(df1$animal, df1$height)
+```
+
+```{r}
+charMode(df1$animal)
+```
+
+
+```{r}
+mean(df1$height)
+  
+```
+```{r}
+
+purrr::invoke_map(.f = list(mean, sum), .x = list(c(3,43,52), list(3,5,7)))
+#definitey something not right here!
+```
+```{r}
+mean(c(3, 43, 52))
+```
+
